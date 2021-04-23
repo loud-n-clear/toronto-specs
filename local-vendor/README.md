@@ -1,5 +1,6 @@
 
 # Local Remittance Vendor
+The below document provides technical details for a local remittance vendor to integrate with the Toronto remittance platform.
 
 ## Flows
 ### Basic bank deposit remittance flow
