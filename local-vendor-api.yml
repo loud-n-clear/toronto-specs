@@ -1,12 +1,14 @@
 openapi: 3.0.0
 info:
-  description: "API that local agents must implement to integrate with MedoPay Express."
+  description: "API that local agents must implement to integrate with the Toronto remittance platform."
   version: "1.0.0"
   title: "Local Agent API"
   contact:
     email: "abe@loudnclear.dev"
-servers:
-- url: https://staging.toronto.loudnclear.dev
+tags:
+  - name: Remittance 
+    description: The Remittance Instruction API provides methods for the Toronto platform to instruct a local remittance vendor to execute a payment to a receiver, check the status of a remittance instruction, or cancel a remittance instruction if possible.
+
 paths:
   /remittance:
     post:
