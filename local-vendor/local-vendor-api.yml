@@ -8,11 +8,10 @@ info:
 tags:
   - name: Remittance 
     description: The Remittance Instruction API provides methods for the Toronto platform to instruct a local remittance vendor to execute a payment to a receiver, check the status of a remittance instruction, or cancel a remittance instruction if possible.
-
 paths:
   /remittance:
     post:
-      summary: Instructs the agent to perform a remittance payment to the specififed receiver.
+      summary: Instructs the agent to perform a payment to the specififed receiver.
       tags:
         - "Remittance"
       requestBody:
@@ -24,9 +23,10 @@ paths:
               $ref: "#/components/schemas/Remittance"
       responses:
         "201":
-          description: The remittance has beens accepted.
+          description: The remittance has been accepted.
         "500":
           description: Server error ocurred, do not try this request again.
+          
           content:
             application/json:
               schema:
