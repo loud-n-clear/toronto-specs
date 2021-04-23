@@ -35,7 +35,7 @@ sequenceDiagram
 </details>
 
 ## API Specification
-In order to integrate, local remittance vendors must implement an API following the OpenAPI 3.0 spec as defined [here](https://raw.githubusercontent.com/loud-n-clear/toronto-specs/main/local-vendor-api.yml). You can view a user-friendly version using [Redocly](https://github.com/Redocly/redoc) by following [this link](http://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/loud-n-clear/toronto-specs/main/vendor/local-vendor-api.yml)
+In order to integrate, local remittance vendors must implement an API following the OpenAPI 3.0 spec as defined [here](./local-vendor-api.yml). You can view a user-friendly version using [Redocly](https://github.com/Redocly/redoc) by following [this link](http://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/loud-n-clear/toronto-specs/main/local-vendor/local-vendor-api.yml)
 
 Please see the spec for authentication & various status codes in the API spec for error code information.
 
