@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   description: "API that local agents must implement to integrate with the Toronto remittance platform."
   version: "1.0.0"
-  title: "Local Agent API"
+  title: "Toronto - Local Agent API Specification"
   contact:
     email: "abe@loudnclear.dev"
 tags:
@@ -11,6 +11,8 @@ tags:
       The Remittance Instruction API provides methods for the Toronto platform to instruct a local 
       remittance vendor to execute a payment to a receiver, check the status of a remittance instruction, 
       or cancel a remittance instruction if possible.
+
+      All timestamps are in UTC.
 
 security:
   - ApiKey: []
