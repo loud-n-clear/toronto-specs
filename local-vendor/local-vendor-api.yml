@@ -7,13 +7,33 @@ info:
     email: "abe@loudnclear.dev"
 tags:
   - name: Remittance 
-    description: The Remittance Instruction API provides methods for the Toronto platform to instruct a local remittance vendor to execute a payment to a receiver, check the status of a remittance instruction, or cancel a remittance instruction if possible.
+    description: |
+      The Remittance Instruction API provides methods for the Toronto platform to instruct a local 
+      remittance vendor to execute a payment to a receiver, check the status of a remittance instruction, 
+      or cancel a remittance instruction if possible.
+
+security:
+  - ApiKey: []
 paths:
   /remittance:
     post:
       summary: Instructs the agent to perform a payment to the specififed receiver.
       tags:
         - "Remittance"
+      parameters:
+        - in: 'header'
+          name: 'Authentication'
+          description: An HMAC signature to help validate the request. See [this article](https://github.com/acquia/http-hmac-spec) for more details.
+          schema:
+            $ref: "#/components/schemas/HMACHeader"
+        - in: 'header'
+          name: 'X-Authorization-Timestamp'
+          schema:
+            type: number
+        - in: 'header'
+          name: 'X-Authorization-Content-SHA256'
+          schema:
+            type: string
       requestBody:
         description: "Remittance instruction details"
         required: true
@@ -24,27 +44,22 @@ paths:
       responses:
         "201":
           description: The remittance has been accepted.
-        "500":
-          description: Server error ocurred, do not try this request again.
-          
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "503":
-          description: Temporarily unavailable, try again later.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
         "400":
           description: Invalid data in the body of the request.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiError"
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "409":
           description: Exchange rate is no longer valid.
+        "500":
+          description: Server error ocurred, do not try this request again.
+        "503":
+          description: Temporarily unavailable, try again later.
   /remittance/{remittanceId}/status:
     get:
       summary: Gets the status of the specified remittance instruction.
@@ -61,6 +76,10 @@ paths:
       responses:
         "200":
           description: The status of the remittance instruction.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemittanceStatus"
     delete:
       summary: Cancels the specified remittance instruction.
       tags:
@@ -75,15 +94,28 @@ paths:
             format: "uuid"
       responses:
         "200":
-          description: The instruction has been deleted.
+          description: The remittance has been deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "409":
           description: The remittance cannot be deleted at this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
+  responses:
+    Unauthorized:
+      description: Invalid key. For example, when X-Api-Token is invalid or missing.
+    Forbidden:
+      description: The specified action is forbidden. For example, when HMAC signature fails.
   schemas:
     Receiver:
+      description: Describes the recipient of the remittance.
       type: object
       properties:
         name:
+          description: The name of the recipient.
           type: object
           properties:
             first:
@@ -99,14 +131,28 @@ components:
               items:
                 $ref: "#/components/schemas/Document"
     Document:
+      description: Documents that can be used to identify the recipient.
       type: object
       properties:
         type:
+          description: Type of document (driver's license, CI, etc.)
           type: string
         number:
+          description: The document number.
           type: string
     Payment:
+      description: Defines the payment to be made to the recipient.
       type: object
+      properties:
+        amount:
+          description: Amount to disburse to the recipient.
+          type: string
+        currency: 
+          description: Currency in which payment to the recipient is to be made.
+          type: string
+        exchangeRate:
+          description: The exchange rate used to calculate the `amount`.
+          type: string
       oneOf:
         - properties:
             deposit:
@@ -114,32 +160,48 @@ components:
               allOf:
                 - $ref: "#/components/schemas/BankDeposit"
     BankDeposit:
+      description: Defines the required parameters for a bank deposit payment to be executed.
       type: object
       properties:
         bank:
+          description: The name of the bank.
           type: string
         account:
+          description: The details of the account.
           type: object
           properties:
             number:
+              description: |
+                The account number.
+                ```
+                Note: This should be stored as a string and not an integer to avoid errors with numbers starting with 0.
+                ```
               type: string
             type:
+              description: The type of account.
               type: string
               enum:
                 - "checking"
                 - "savings"
                 - "other"
     Remittance:
-      type: object
       description: Defines an instruction to perform pay a remittance to a receiver in the agent's jurisdiction.
+      type: object
       required:
         - "remittanceId"
+        - "referenceCode"
+        - "createdOn"
         - "receiver"
       properties:
         remittanceId:
+          description: An unique identifier for use internally between the vendor and the platform in subsequent API calls, billing, reconciliation, etc.
           type: string
         referenceCode:
+          description: A consumer-facing identifier for the remittance.
           type: string
+        createdOn:
+          type: number
+          description: The origination timestamp of the remittance.
         receiver:
           $ref: "#/components/schemas/Receiver"
         payment:
@@ -148,14 +210,27 @@ components:
       type: object
       description: The current status of the remittance.
       properties:
+        notes:
+          description: Internal notes to share regarding the request.
+          type: string
+        updatedOn:
+          type: string
         status:
           type: string
+          description: |
+            - `processing` Means the request has been accepted and is awaiting payment.
+            - `paid` Means the payment has been made to the recipient.
+            - `error` Means there is an error with the transaction. See `notes` for more details.
+            - `cancelled` Means the transaction has been cancelled by request.
           enum:
-            - "pending"
             - "processing"
             - "paid"
             - "error"
-    ApiError:
+            - "cancelled"
+    HMACHeader:
+      type: string
+      description: An HMAC signature of the form base64(sha256(sharedSecret + ":" + X-Authorization-Timestamp + ":" + sha256(body)))
+    Error:
       type: object
       properties:
         message:
@@ -163,5 +238,5 @@ components:
   securitySchemes:
     ApiKey:
       type: "apiKey"
-      name: "x-api-key"
+      name: "X-Api-Key"
       in: "header"
