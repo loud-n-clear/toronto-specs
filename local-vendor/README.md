@@ -32,7 +32,6 @@ You can view a user-friendly version using [Redocly](https://github.com/Redocly/
 
 Please see the various status codes in the API spec for error code information.
 
-
 ## Considerations
 - What happens if a remittance is in "pending" status for too long?
 - What happens if there is a discrepancy between the exchange rate we send and the exchange rate the vendor expects?
