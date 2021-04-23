@@ -1,0 +1,165 @@
+openapi: 3.0.0
+info:
+  description: "API that local agents must implement to integrate with MedoPay Express."
+  version: "1.0.0"
+  title: "Local Agent API"
+  contact:
+    email: "abe@loudnclear.dev"
+servers:
+- url: https://staging.toronto.loudnclear.dev
+paths:
+  /remittance:
+    post:
+      summary: Instructs the agent to perform a remittance payment to the specififed receiver.
+      tags:
+        - "Remittance"
+      requestBody:
+        description: "Remittance instruction details"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Remittance"
+      responses:
+        "201":
+          description: The remittance has beens accepted.
+        "500":
+          description: Server error ocurred, do not try this request again.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Temporarily unavailable, try again later.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: Invalid data in the body of the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Exchange rate is no longer valid.
+  /remittance/{remittanceId}/status:
+    get:
+      summary: Gets the status of the specified remittance instruction.
+      tags:
+        - "Remittance"
+      parameters:
+        - name: "remittanceId"
+          in: "path"
+          description: "ID of instruction to return"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: The status of the remittance instruction.
+    delete:
+      summary: Cancels the specified remittance instruction.
+      tags:
+        - "Remittance"
+      parameters:
+        - name: "remittanceId"
+          in: "path"
+          description: "ID of instruction to return"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: The instruction has been deleted.
+        "409":
+          description: The remittance cannot be deleted at this time.
+components:
+  schemas:
+    Receiver:
+      type: object
+      properties:
+        name:
+          type: object
+          properties:
+            first:
+              type: string
+            middle:
+              type: string
+            last:
+              type: string
+            dob:
+              type: string
+            documents:
+              type: array
+              items:
+                $ref: "#/components/schemas/Document"
+    Document:
+      type: object
+      properties:
+        type:
+          type: string
+        number:
+          type: string
+    Payment:
+      type: object
+      oneOf:
+        - properties:
+            deposit:
+              type: object
+              allOf:
+                - $ref: "#/components/schemas/BankDeposit"
+    BankDeposit:
+      type: object
+      properties:
+        bank:
+          type: string
+        account:
+          type: object
+          properties:
+            number:
+              type: string
+            type:
+              type: string
+              enum:
+                - "checking"
+                - "savings"
+                - "other"
+    Remittance:
+      type: object
+      description: Defines an instruction to perform pay a remittance to a receiver in the agent's jurisdiction.
+      required:
+        - "remittanceId"
+        - "receiver"
+      properties:
+        remittanceId:
+          type: string
+        referenceCode:
+          type: string
+        receiver:
+          $ref: "#/components/schemas/Receiver"
+        payment:
+          $ref: "#/components/schemas/Payment"
+    RemittanceStatus:
+      type: object
+      description: The current status of the remittance.
+      properties:
+        status:
+          type: string
+          enum:
+            - "pending"
+            - "processing"
+            - "paid"
+            - "error"
+    ApiError:
+      type: object
+      properties:
+        message:
+          type: string
+  securitySchemes:
+    ApiKey:
+      type: "apiKey"
+      name: "x-api-key"
+      in: "header"
